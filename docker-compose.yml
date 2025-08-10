@@ -1,0 +1,44 @@
+version: '3'
+
+networks:
+  monitoring: 
+    driver: bridge
+
+
+services:
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports: 
+      - "3100:3100"
+    volumes: 
+      - ./loki-config.yaml:/etc/loki/config.yaml
+      - ./loki-data/index:/loki/index
+      - ./loki-data/chunks:/loki/chunks
+      - ./loki-data/wal:/loki/wal
+    command: -config.file=/etc/loki/config.yaml
+    networks:
+      - monitoring
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes: 
+      - ./promtail-config.yaml:/etc/promtail/config.yaml
+      - ./book-servic/logs:/var/logs/book-service
+      - ./review-service/logs:/var/logs/review-service
+    command: -config.file=/etc/promtail/config.yaml
+    networks: 
+      - monitoring
+    depends_on:
+      - loki
+
+  grafana: 
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports: 
+      - "3000:3000"
+    networks: 
+      - monitoring
+    depends_on:
+      - loki
